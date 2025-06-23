@@ -140,8 +140,8 @@
         document.getElementById("ratingResult").innerText = "Market value must be greater than 0.";
         return;
       }
-      if (age < 10 || age > 50) {
-        document.getElementById("ratingResult").innerText = "Age must be between 10 and 50.";
+      if (age < 14 || age > 50) {
+        document.getElementById("ratingResult").innerText = "Age must be between 14 and 50.";
         return;
       }
 
@@ -154,7 +154,7 @@
       else if (age <= 31) ageFactor = 1.0;
       else if (age <= 34) ageFactor = 0.7;
       else if (age <= 37) ageFactor = 0.4;
-      else ageFactor = 0.3;
+      else ageFactor = 0.25;
 
       const baseFactor = 0.00000711;
       const rating = (1 / 0.1885) * Math.log(marketValue / (baseFactor * ageFactor));
