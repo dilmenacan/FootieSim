@@ -83,6 +83,45 @@
       white-space: pre-line;
       min-height: 60px;
     }
+    /* Manuel 11 için container */
+    #manual11Container {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      margin-top: 20px;
+      align-items: flex-start;
+    }
+    .team11 {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .team11 label {
+      font-weight: normal;
+      font-size: 14px;
+      margin-bottom: 6px;
+    }
+    .playerInput {
+      width: 36px;
+      height: 36px;
+      text-align: center;
+      font-size: 18px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+    #finishBtn {
+      margin-top: 10px;
+      padding: 8px 16px;
+      font-size: 16px;
+      border-radius: 6px;
+      background-color: #28a745;
+      border: none;
+      color: white;
+      cursor: pointer;
+    }
+    #finishBtn:hover {
+      background-color: #1e7e34;
+    }
   </style>
 </head>
 <body>
@@ -96,15 +135,30 @@
   <div id="settingsPanel">
     <label><input type="checkbox" id="homeAdvantage"> Home Advantage</label>
     <label><input type="checkbox" id="detailedAnalysis"> Detailed Analysis</label>
+    <label><input type="checkbox" id="manual11"> Manuel 11</label>
   </div>
 
   <div id="match" class="section">
     <h2>⚽ Match Simulator</h2>
-    <label>Team A Rating:</label>
-    <input id="ratingA" type="number" value="20" min="0" max="100"><br>
 
-    <label>Team B Rating:</label>
-    <input id="ratingB" type="number" value="20" min="0" max="100"><br>
+    <div id="normalRatingInputs">
+      <label>Team A Rating:</label>
+      <input id="ratingA" type="number" value="50" min="0" max="100"><br>
+
+      <label>Team B Rating:</label>
+      <input id="ratingB" type="number" value="50" min="0" max="100"><br>
+    </div>
+
+    <div id="manual11Container" style="display:none;">
+      <div class="team11" id="teamA11">
+        <label>A Team 11</label>
+      </div>
+      <div class="team11" id="teamB11">
+        <label>B Team 11</label>
+      </div>
+    </div>
+
+    <button id="finishBtn" style="display:none;" onclick="finishManual11()">Finish</button>
 
     <button onclick="simulateMatch()">Simulate Match</button>
     <h3 id="result"></h3>
@@ -115,145 +169,243 @@
     <h2>Market Value - FIFA Rating Calculator</h2>
 
     <label>Player Market Value (€ Million):</label>
-    <input id="marketValue" type="number" value="87" min="0" step="0.01"><br>
+    <input id="marketValue" type="number" value="0" min="0" step="0.01"><br>
 
     <label>Player Age:</label>
-    <input id="playerAge" type="number" value="23" min="10" max="50"><br>
+    <input id="playerAge" type="number" value="0" min="10" max="50"><br>
 
     <button onclick="calculateRating()">Calculate FIFA Rating</button>
 
     <h3 id="ratingResult"></h3>
   </div>
 
-  <script>
-    function showSection(section) {
-      document.querySelectorAll('.section').forEach(div => div.style.display = 'none');
-      document.getElementById(section).style.display = 'block';
-      clearResults();
+<script>
+  function showSection(section) {
+    document.querySelectorAll('.section').forEach(div => div.style.display = 'none');
+    document.getElementById(section).style.display = 'block';
+    clearResults();
+  }
+
+  function toggleSettings() {
+    const panel = document.getElementById("settingsPanel");
+    panel.style.display = (panel.style.display === "block") ? "none" : "block";
+    updateManual11Mode();
+  }
+
+  function clearResults() {
+    document.getElementById("result").innerText = "";
+    document.getElementById("detailedOutput").innerText = "";
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    showSection('match');
+    setupManual11Inputs();
+    document.getElementById("manual11").addEventListener('change', updateManual11Mode);
+    document.getElementById("homeAdvantage").addEventListener('change', clearResults);
+    document.getElementById("detailedAnalysis").addEventListener('change', clearResults);
+  });
+
+  // Manuel 11 için 11 input kutusu oluştur
+  function setupManual11Inputs(){
+    const teamAContainer = document.getElementById("teamA11");
+    const teamBContainer = document.getElementById("teamB11");
+    for(let i=0; i<11; i++){
+      const inputA = document.createElement("input");
+      inputA.type = "number";
+      inputA.min = 0;
+      inputA.max = 100;
+      inputA.className = "playerInput";
+      inputA.placeholder = "";
+      inputA.value = "";
+      teamAContainer.appendChild(inputA);
+
+      const inputB = document.createElement("input");
+      inputB.type = "number";
+      inputB.min = 0;
+      inputB.max = 100;
+      inputB.className = "playerInput";
+      inputB.placeholder = "";
+      inputB.value = "";
+      teamBContainer.appendChild(inputB);
     }
+  }
 
-    function toggleSettings() {
-      const panel = document.getElementById("settingsPanel");
-      panel.style.display = (panel.style.display === "block") ? "none" : "block";
-    }
+  // Manuel 11 modu açılınca veya kapandığında UI güncelle
+  function updateManual11Mode(){
+    const manualChecked = document.getElementById("manual11").checked;
+    document.getElementById("normalRatingInputs").style.display = manualChecked ? "none" : "block";
+    document.getElementById("manual11Container").style.display = manualChecked ? "flex" : "none";
+    document.getElementById("finishBtn").style.display = "none"; // reset finish butonu
+    clearResults();
 
-    function clearResults() {
-      document.getElementById("result").innerText = "";
-      document.getElementById("detailedOutput").innerText = "";
-    }
-
-    document.addEventListener('DOMContentLoaded', () => {
-      showSection('match');
-    });
-
-    function simulateMatch() {
-      clearResults();
-
-      const ratingA = parseInt(document.getElementById("ratingA").value);
-      const ratingB = parseInt(document.getElementById("ratingB").value);
-      const homeAdvantageChecked = document.getElementById("homeAdvantage").checked;
-      const detailedChecked = document.getElementById("detailedAnalysis").checked;
-
-      const differenceRaw = Math.abs(ratingA - ratingB);
-      const differenceNorm = differenceRaw / 22;
-      const totalGoals = 1 + (differenceNorm * 2) * 5;
-      const goalDifferenceFactor = Math.max(0.05, 1 - (differenceNorm * 2));
-
-      let teamAStrength = ratingA / (ratingA + ratingB);
-      let teamBStrength = ratingB / (ratingA + ratingB);
-
-      if (homeAdvantageChecked) {
-        teamAStrength += 0.05;
-      }
-
-      // Normalize strengths
-      const totalStrength = teamAStrength + teamBStrength;
-      teamAStrength /= totalStrength;
-      teamBStrength /= totalStrength;
-
-      let goalsA = totalGoals * teamAStrength;
-      let goalsB = totalGoals * teamBStrength;
-
-      // Apply goal difference factor to weaker team
-      const weaker = ratingA < ratingB ? 'A' : 'B';
-      if (weaker === 'A') {
-        goalsA *= goalDifferenceFactor;
-      } else {
-        goalsB *= goalDifferenceFactor;
-      }
-
-      // Round scores for initial calculations
-      const baseA = Math.round(goalsA);
-      const baseB = Math.round(goalsB);
-
-      // Generate detailed scores and percentages
-      let scores = [];
-
-      if (differenceRaw === 0) {
-        // If equal strength, favor draws
-        scores = [
-          { score: `1-1`, percent: 40 + Math.floor(Math.random() * 10) },
-          { score: `0-0`, percent: 30 + Math.floor(Math.random() * 10) },
-          { score: `2-2`, percent: 20 + Math.floor(Math.random() * 10) }
-        ];
-      } else {
-        scores = [
-          { score: `${baseA}-${baseB}`, percent: 50 + Math.floor(Math.random() * 15) },
-          { score: `${baseA}-${baseB + 1}`, percent: 20 + Math.floor(Math.random() * 10) },
-          { score: `${baseA + 1}-${baseB}`, percent: 15 + Math.floor(Math.random() * 10) }
-        ];
-      }
-
-      // Sort by percent descending to find highest probability
-      scores.sort((a,b) => b.percent - a.percent);
-
-      // Main score is the one with highest percent
-      const mainScore = scores[0].score;
-
-      // Show main result
-      document.getElementById("result").innerText = `Score: Team A ${mainScore.split('-')[0]} - ${mainScore.split('-')[1]} Team B`;
-
-      // Show detailed analysis if checked
-      if (detailedChecked) {
-        let text = "";
-        scores.forEach((item, i) => {
-          text += `${i + 1}. ${item.score} %${item.percent}\n`;
+    if(manualChecked){
+      // Manuel modda finish butonu sadece B takımının 11 oyuncusu dolunca görünsün
+      const inputsB = document.querySelectorAll("#teamB11 input");
+      inputsB.forEach(input => {
+        input.addEventListener('input', () => {
+          const allFilled = Array.from(inputsB).every(i => i.value !== "" && !isNaN(i.value));
+          document.getElementById("finishBtn").style.display = allFilled ? "inline-block" : "none";
         });
-        document.getElementById("detailedOutput").innerText = text;
-      }
+      });
+    }
+  }
+
+  function simulateMatch(){
+    clearResults();
+
+    const manualChecked = document.getElementById("manual11").checked;
+    const homeAdvantageChecked = document.getElementById("homeAdvantage").checked;
+    const detailedChecked = document.getElementById("detailedAnalysis").checked;
+
+    if(manualChecked){
+      alert("Manuel 11 modunda önce Finish butonuna basmalısın.");
+      return;
     }
 
-    function calculateRating() {
-      const marketValue = parseFloat(document.getElementById("marketValue").value);
-      const age = parseInt(document.getElementById("playerAge").value);
+    const ratingA = parseInt(document.getElementById("ratingA").value);
+    const ratingB = parseInt(document.getElementById("ratingB").value);
 
-      if (marketValue <= 0) {
-        document.getElementById("ratingResult").innerText = "Market value must be greater than 0.";
-        return;
-      }
-      if (age < 14 || age > 50) {
-        document.getElementById("ratingResult").innerText = "Age must be between 14 and 50.";
-        return;
-      }
-
-      let ageFactor;
-      if (age <= 18) ageFactor = 2.0;
-      else if (age <= 20) ageFactor = 1.8;
-      else if (age <= 23) ageFactor = 1.55;
-      else if (age <= 26) ageFactor = 1.2;
-      else if (age <= 29) ageFactor = 1;
-      else if (age <= 32) ageFactor = 0.79;
-      else if (age <= 35) ageFactor = 0.54;
-      else if (age <= 37) ageFactor = 0.45;
-      else ageFactor = 0.35;
-
-      const baseFactor = 0.00000711;
-      const rating = (1 / 0.1885) * Math.log(marketValue / (baseFactor * ageFactor));
-      const finalRating = Math.round(rating);
-
-      document.getElementById("ratingResult").innerText = `Estimated FIFA Rating: ${finalRating}`;
+    if(isNaN(ratingA) || isNaN(ratingB)){
+      alert("Lütfen geçerli sayılar gir.");
+      return;
     }
-  </script>
+
+    const result = calcScore(ratingA, ratingB, homeAdvantageChecked);
+
+    document.getElementById("result").innerText = `Score: Team A ${result.mainScore.split('-')[0]} - ${result.mainScore.split('-')[1]} Team B`;
+
+    if(detailedChecked){
+      let text = "";
+      result.scores.forEach((item,i) => {
+        text += `${i+1}. ${item.score} %${item.percent}\n`;
+      });
+      document.getElementById("detailedOutput").innerText = text;
+    }
+  }
+
+  // Finish butonuna basınca ortalama hesapla ve skor üret
+  function finishManual11(){
+    clearResults();
+    const homeAdvantageChecked = document.getElementById("homeAdvantage").checked;
+    const detailedChecked = document.getElementById("detailedAnalysis").checked;
+
+    const inputsA = document.querySelectorAll("#teamA11 input");
+    const inputsB = document.querySelectorAll("#teamB11 input");
+
+    let sumA = 0, sumB = 0;
+    for(let i=0; i<11; i++){
+      const valA = parseInt(inputsA[i].value);
+      const valB = parseInt(inputsB[i].value);
+
+      if(isNaN(valA) || isNaN(valB)){
+        alert("Tüm oyuncuların ratinglerini doldur!");
+        return;
+      }
+      sumA += valA;
+      sumB += valB;
+    }
+    const avgA = Math.round(sumA/11);
+    const avgB = Math.round(sumB/11);
+
+    const result = calcScore(avgA, avgB, homeAdvantageChecked);
+
+    document.getElementById("result").innerText = `Score: Team A ${result.mainScore.split('-')[0]} - ${result.mainScore.split('-')[1]} Team B`;
+
+    if(detailedChecked){
+      let text = "";
+      result.scores.forEach((item,i) => {
+        text += `${i+1}. ${item.score} %${item.percent}\n`;
+      });
+      document.getElementById("detailedOutput").innerText = text;
+    }
+  }
+
+  // Skor hesaplama fonksiyonu (formül + detaylı skorlar)
+  function calcScore(ratingA, ratingB, homeAdvantageChecked){
+    const differenceRaw = Math.abs(ratingA - ratingB);
+    const differenceNorm = differenceRaw / 22;
+    const totalGoals = 1 + (differenceNorm * 2) * 5;
+    const goalDifferenceFactor = Math.max(0.05, 1 - (differenceNorm * 2));
+
+    let teamAStrength = ratingA / (ratingA + ratingB);
+    let teamBStrength = ratingB / (ratingA + ratingB);
+
+    if (homeAdvantageChecked) {
+      teamAStrength += 0.05;
+    }
+
+    const totalStrength = teamAStrength + teamBStrength;
+    teamAStrength /= totalStrength;
+    teamBStrength /= totalStrength;
+
+    let goalsA = totalGoals * teamAStrength;
+    let goalsB = totalGoals * teamBStrength;
+
+    const weaker = ratingA < ratingB ? 'A' : 'B';
+    if (weaker === 'A') {
+      goalsA *= goalDifferenceFactor;
+    } else {
+      goalsB *= goalDifferenceFactor;
+    }
+
+    const baseA = Math.round(goalsA);
+    const baseB = Math.round(goalsB);
+
+    let scores = [];
+
+    if (differenceRaw === 0) {
+      scores = [
+        { score: `1-1`, percent: 40 + Math.floor(Math.random() * 10) },
+        { score: `0-0`, percent: 30 + Math.floor(Math.random() * 10) },
+        { score: `2-2`, percent: 20 + Math.floor(Math.random() * 10) }
+      ];
+    } else {
+      scores = [
+        { score: `${baseA}-${baseB}`, percent: 50 + Math.floor(Math.random() * 15) },
+        { score: `${baseA}-${baseB + 1}`, percent: 20 + Math.floor(Math.random() * 10) },
+        { score: `${baseA + 1}-${baseB}`, percent: 15 + Math.floor(Math.random() * 10) }
+      ];
+    }
+
+    scores.sort((a,b) => b.percent - a.percent);
+
+    return {
+      mainScore: scores[0].score,
+      scores
+    };
+  }
+
+  function calculateRating() {
+    const marketValue = parseFloat(document.getElementById("marketValue").value);
+    const age = parseInt(document.getElementById("playerAge").value);
+
+    if (marketValue <= 0) {
+      document.getElementById("ratingResult").innerText = "Market value must be greater than 0.";
+      return;
+    }
+    if (age < 14 || age > 50) {
+      document.getElementById("ratingResult").innerText = "Age must be between 14 and 50.";
+      return;
+    }
+
+    let ageFactor;
+    if (age <= 18) ageFactor = 2.0;
+    else if (age <= 20) ageFactor = 1.8;
+    else if (age <= 23) ageFactor = 1.55;
+    else if (age <= 26) ageFactor = 1.2;
+    else if (age <= 29) ageFactor = 1;
+    else if (age <= 32) ageFactor = 0.79;
+    else if (age <= 35) ageFactor = 0.54;
+    else if (age <= 37) ageFactor = 0.45;
+    else ageFactor = 0.35;
+
+    const baseFactor = 0.00000711;
+    const rating = (1 / 0.1885) * Math.log(marketValue / (baseFactor * ageFactor));
+    const finalRating = Math.round(rating);
+
+    document.getElementById("ratingResult").innerText = `Estimated FIFA Rating: ${finalRating}`;
+  }
+</script>
 
 </body>
 </html>
