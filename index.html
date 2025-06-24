@@ -32,6 +32,7 @@
       padding: 20px;
       border-radius: 10px;
       box-shadow: 0 0 8px rgba(0,0,0,0.1);
+      position: relative;
     }
     label {
       display: block;
@@ -47,6 +48,31 @@
       border: 1px solid #ccc;
       box-sizing: border-box;
     }
+    #settingsToggle {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      background: #ffc107;
+      color: black;
+      z-index: 1000;
+    }
+    #settingsPanel {
+      display: none;
+      position: fixed;
+      top: 50px;
+      right: 10px;
+      background: #f8f9fa;
+      padding: 10px;
+      border-radius: 8px;
+      box-shadow: 0 0 4px rgba(0,0,0,0.1);
+      z-index: 999;
+      text-align: left;
+    }
+    #detailedOutput {
+      font-size: 14px;
+      color: #555;
+      margin-top: 10px;
+    }
   </style>
 </head>
 <body>
@@ -56,6 +82,12 @@
   <button onclick="showSection('match')">Match Simulator</button>
   <button onclick="showSection('market')">Rating Calculator</button>
 
+  <button id="settingsToggle" onclick="toggleSettings()">Settings</button>
+  <div id="settingsPanel">
+    <label><input type="checkbox" id="homeAdvantage"> Home Advantage</label>
+    <label><input type="checkbox" id="detailedAnalysis"> Detailed Analysis</label>
+  </div>
+
   <div id="match" class="section">
     <h2>⚽ Match Simulator</h2>
     <label>Team A Rating:</label>
@@ -64,10 +96,9 @@
     <label>Team B Rating:</label>
     <input id="ratingB" type="number" value="70" min="0" max="100"><br>
 
-    <label><input type="checkbox" id="homeAdvantage"> Home Advantage</label>
     <button onclick="simulateMatch()">Simulate Match</button>
-
     <h3 id="result"></h3>
+    <div id="detailedOutput"></div>
   </div>
 
   <div id="market" class="section">
@@ -90,6 +121,11 @@
       document.getElementById(section).style.display = 'block';
     }
 
+    function toggleSettings() {
+      const panel = document.getElementById("settingsPanel");
+      panel.style.display = panel.style.display === "none" ? "block" : "none";
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
       showSection('match');
     });
@@ -98,6 +134,7 @@
       const ratingA = parseInt(document.getElementById("ratingA").value);
       const ratingB = parseInt(document.getElementById("ratingB").value);
       const homeAdvantageChecked = document.getElementById("homeAdvantage").checked;
+      const detailedChecked = document.getElementById("detailedAnalysis").checked;
 
       const differenceRaw = Math.abs(ratingA - ratingB);
       const differenceNorm = differenceRaw / 22;
@@ -125,11 +162,29 @@
         goalsB *= goalDifferenceFactor;
       }
 
-      goalsA = Math.round(goalsA);
-      goalsB = Math.round(goalsB);
+      const finalA = Math.round(goalsA);
+      const finalB = Math.round(goalsB);
 
-      document.getElementById("result").innerText =
-        `Score: Team A ${goalsA} - ${goalsB} Team B`;
+      document.getElementById("result").innerText = `Score: Team A ${finalA} - ${finalB} Team B`;
+
+      if (detailedChecked) {
+        const scores = [
+          { score: `${finalA}-${finalB}`, percent: (45 + Math.floor(Math.random() * 11)) },
+          { score: `${finalA}-${finalB + 1}`, percent: (25 + Math.floor(Math.random() * 11)) },
+          { score: `${finalA + 1}-${finalB}`, percent: (15 + Math.floor(Math.random() * 10)) }
+        ];
+
+        scores.sort((a, b) => b.percent - a.percent);
+
+        let html = "";
+        scores.forEach((s, i) => {
+          html += `${i + 1}. ${s.score} %${s.percent}<br>`;
+        });
+
+        document.getElementById("detailedOutput").innerHTML = html;
+      } else {
+        document.getElementById("detailedOutput").innerHTML = "";
+      }
     }
 
     function calculateRating() {
@@ -163,6 +218,5 @@
       document.getElementById("ratingResult").innerText = `Estimated FIFA Rating: ${finalRating}`;
     }
   </script>
-
 </body>
 </html>
