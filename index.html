@@ -4,7 +4,7 @@
   <title>Match Simulator and Rating Calculator</title>
   <style>
     body {
-      font-family: sans-serif;
+      font-family: Arial, sans-serif;
       text-align: center;
       margin-top: 40px;
       background-color: #f2f2f2;
@@ -55,6 +55,10 @@
       background: #ffc107;
       color: black;
       z-index: 1000;
+      border-radius: 6px;
+      border: none;
+      padding: 8px 12px;
+      user-select: none;
     }
     #settingsPanel {
       display: none;
@@ -62,16 +66,22 @@
       top: 50px;
       right: 10px;
       background: #f8f9fa;
-      padding: 10px;
+      padding: 15px;
       border-radius: 8px;
-      box-shadow: 0 0 4px rgba(0,0,0,0.1);
+      box-shadow: 0 0 6px rgba(0,0,0,0.15);
       z-index: 999;
       text-align: left;
+      width: 220px;
+      font-weight: normal;
+      font-size: 14px;
     }
     #detailedOutput {
       font-size: 14px;
       color: #555;
       margin-top: 10px;
+      font-family: monospace;
+      white-space: pre-line;
+      min-height: 60px;
     }
   </style>
 </head>
@@ -91,10 +101,10 @@
   <div id="match" class="section">
     <h2>⚽ Match Simulator</h2>
     <label>Team A Rating:</label>
-    <input id="ratingA" type="number" value="80" min="0" max="100"><br>
+    <input id="ratingA" type="number" value="20" min="0" max="100"><br>
 
     <label>Team B Rating:</label>
-    <input id="ratingB" type="number" value="70" min="0" max="100"><br>
+    <input id="ratingB" type="number" value="20" min="0" max="100"><br>
 
     <button onclick="simulateMatch()">Simulate Match</button>
     <h3 id="result"></h3>
@@ -119,11 +129,17 @@
     function showSection(section) {
       document.querySelectorAll('.section').forEach(div => div.style.display = 'none');
       document.getElementById(section).style.display = 'block';
+      clearResults();
     }
 
     function toggleSettings() {
       const panel = document.getElementById("settingsPanel");
-      panel.style.display = panel.style.display === "none" ? "block" : "none";
+      panel.style.display = (panel.style.display === "block") ? "none" : "block";
+    }
+
+    function clearResults() {
+      document.getElementById("result").innerText = "";
+      document.getElementById("detailedOutput").innerText = "";
     }
 
     document.addEventListener('DOMContentLoaded', () => {
@@ -131,6 +147,8 @@
     });
 
     function simulateMatch() {
+      clearResults();
+
       const ratingA = parseInt(document.getElementById("ratingA").value);
       const ratingB = parseInt(document.getElementById("ratingB").value);
       const homeAdvantageChecked = document.getElementById("homeAdvantage").checked;
@@ -148,6 +166,7 @@
         teamAStrength += 0.05;
       }
 
+      // Normalize strengths
       const totalStrength = teamAStrength + teamBStrength;
       teamAStrength /= totalStrength;
       teamBStrength /= totalStrength;
@@ -155,6 +174,7 @@
       let goalsA = totalGoals * teamAStrength;
       let goalsB = totalGoals * teamBStrength;
 
+      // Apply goal difference factor to weaker team
       const weaker = ratingA < ratingB ? 'A' : 'B';
       if (weaker === 'A') {
         goalsA *= goalDifferenceFactor;
@@ -162,28 +182,44 @@
         goalsB *= goalDifferenceFactor;
       }
 
-      const finalA = Math.round(goalsA);
-      const finalB = Math.round(goalsB);
+      // Round scores for initial calculations
+      const baseA = Math.round(goalsA);
+      const baseB = Math.round(goalsB);
 
-      document.getElementById("result").innerText = `Score: Team A ${finalA} - ${finalB} Team B`;
+      // Generate detailed scores and percentages
+      let scores = [];
 
-      if (detailedChecked) {
-        const scores = [
-          { score: `${finalA}-${finalB}`, percent: (45 + Math.floor(Math.random() * 11)) },
-          { score: `${finalA}-${finalB + 1}`, percent: (25 + Math.floor(Math.random() * 11)) },
-          { score: `${finalA + 1}-${finalB}`, percent: (15 + Math.floor(Math.random() * 10)) }
+      if (differenceRaw === 0) {
+        // If equal strength, favor draws
+        scores = [
+          { score: `1-1`, percent: 40 + Math.floor(Math.random() * 10) },
+          { score: `0-0`, percent: 30 + Math.floor(Math.random() * 10) },
+          { score: `2-2`, percent: 20 + Math.floor(Math.random() * 10) }
         ];
-
-        scores.sort((a, b) => b.percent - a.percent);
-
-        let html = "";
-        scores.forEach((s, i) => {
-          html += `${i + 1}. ${s.score} %${s.percent}<br>`;
-        });
-
-        document.getElementById("detailedOutput").innerHTML = html;
       } else {
-        document.getElementById("detailedOutput").innerHTML = "";
+        scores = [
+          { score: `${baseA}-${baseB}`, percent: 50 + Math.floor(Math.random() * 15) },
+          { score: `${baseA}-${baseB + 1}`, percent: 20 + Math.floor(Math.random() * 10) },
+          { score: `${baseA + 1}-${baseB}`, percent: 15 + Math.floor(Math.random() * 10) }
+        ];
+      }
+
+      // Sort by percent descending to find highest probability
+      scores.sort((a,b) => b.percent - a.percent);
+
+      // Main score is the one with highest percent
+      const mainScore = scores[0].score;
+
+      // Show main result
+      document.getElementById("result").innerText = `Score: Team A ${mainScore.split('-')[0]} - ${mainScore.split('-')[1]} Team B`;
+
+      // Show detailed analysis if checked
+      if (detailedChecked) {
+        let text = "";
+        scores.forEach((item, i) => {
+          text += `${i + 1}. ${item.score} %${item.percent}\n`;
+        });
+        document.getElementById("detailedOutput").innerText = text;
       }
     }
 
@@ -218,5 +254,7 @@
       document.getElementById("ratingResult").innerText = `Estimated FIFA Rating: ${finalRating}`;
     }
   </script>
+
 </body>
 </html>
+
