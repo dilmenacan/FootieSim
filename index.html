@@ -39,7 +39,7 @@
       margin-top: 15px;
       font-weight: bold;
     }
-    input[type=number] {
+    input[type=number], input[type=range] {
       padding: 6px;
       width: 100%;
       font-size: 16px;
@@ -180,11 +180,33 @@
     <label>Player Age:</label>
     <input id="playerAge" type="number" value="0" min="10" max="50"><br>
 
+    <label>Player Position:</label>
+    <input id="positionSlider" type="range" min="0" max="7" value="0" step="1" oninput="updatePositionLabel()">
+    <div id="positionLabel">GK</div>
+
     <button onclick="calculateRating()">Calculate FIFA Rating</button>
     <h3 id="ratingResult"></h3>
   </div>
 
 <script>
+  const positions = ['GK', 'CB', 'LB/RB', 'CDM', 'CM', 'CAM', 'LW/RW', 'ST'];
+  const positionFactors = {
+    GK: 1.05,
+    CB: 1.025,
+    'LB/RB': 1.02,
+    CDM: 1.01,
+    CM: 1.02,
+    CAM: 1,
+    'LW/RW': 1,
+    ST: 1
+  };
+
+  function updatePositionLabel() {
+    const slider = document.getElementById('positionSlider');
+    const label = document.getElementById('positionLabel');
+    label.innerText = positions[slider.value];
+  }
+
   function showSection(section) {
     document.querySelectorAll('.section').forEach(div => div.style.display = 'none');
     document.getElementById(section).style.display = 'block';
@@ -199,10 +221,12 @@
   function clearResults() {
     document.getElementById("result").innerText = "";
     document.getElementById("detailedOutput").innerText = "";
+    document.getElementById("ratingResult").innerText = "";
   }
 
   document.addEventListener('DOMContentLoaded', () => {
     showSection('match');
+    updatePositionLabel();
     setupManual11Inputs();
     document.getElementById("manual11").addEventListener('change', updateManual11Mode);
     document.getElementById("homeAdvantage").addEventListener('change', clearResults);
@@ -381,6 +405,7 @@
   function calculateRating() {
     const marketValue = parseFloat(document.getElementById("marketValue").value);
     const age = parseInt(document.getElementById("playerAge").value);
+    const position = positions[document.getElementById("positionSlider").value];
 
     if (marketValue <= 0) {
       document.getElementById("ratingResult").innerText = "Market value must be greater than 0.";
@@ -403,8 +428,11 @@
     else ageFactor = 0.35;
 
     const baseFactor = 0.00000711;
-    const rating = (1 / 0.1885) * Math.log(marketValue / (baseFactor * ageFactor));
-    const finalRating = Math.round(rating);
+    const rawRating = (1 / 0.1885) * Math.log(marketValue / (baseFactor * ageFactor));
+
+    const positionFactor = positionFactors[position] || 1;
+
+    const finalRating = Math.round(rawRating * positionFactor);
 
     document.getElementById("ratingResult").innerText = `Estimated FIFA Rating: ${finalRating}`;
   }
@@ -412,5 +440,4 @@
 
 </body>
 </html>
-
 
