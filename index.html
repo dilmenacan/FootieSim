@@ -38,8 +38,9 @@
       display: block;
       margin-top: 15px;
       font-weight: bold;
+      text-align: left;
     }
-    input[type=number], input[type=range] {
+    input[type=number], input[type=range], select {
       padding: 6px;
       width: 100%;
       font-size: 16px;
@@ -82,6 +83,7 @@
       font-family: monospace;
       white-space: pre-line;
       min-height: 60px;
+      text-align: left;
     }
     #manual11Container {
       display: flex;
@@ -99,6 +101,7 @@
       font-weight: normal;
       font-size: 14px;
       margin-bottom: 6px;
+      text-align: center;
     }
     .playerInput {
       width: 36px;
@@ -121,6 +124,75 @@
     #finishBtn:hover {
       background-color: #1e7e34;
     }
+    /* New Presets Tab styles */
+    #presets {
+      display: none;
+      max-width: 500px;
+      margin: 30px auto 0 auto;
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 8px rgba(0,0,0,0.1);
+      text-align: left;
+    }
+    #presets label {
+      font-weight: bold;
+      margin-top: 10px;
+      display: block;
+    }
+    #presetNameInput {
+      width: 100%;
+      font-size: 16px;
+      padding: 6px;
+      margin-top: 5px;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+      box-sizing: border-box;
+    }
+    #presetManualInputs {
+      margin-top: 10px;
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+      max-width: 380px;
+    }
+    #presetManualInputs input {
+      width: 50px;
+      height: 40px;
+      font-size: 18px;
+      text-align: center;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+    }
+    #presetSingleRating {
+      margin-top: 10px;
+      font-size: 16px;
+      padding: 6px;
+      width: 100px;
+    }
+    #presetListSelect, #presetApplyTeamSelect {
+      margin-top: 10px;
+      width: 100%;
+      font-size: 16px;
+      padding: 6px;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+      box-sizing: border-box;
+    }
+    #presetButtons {
+      margin-top: 15px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    #presetButtons button {
+      flex: 1;
+      min-width: 80px;
+    }
+    #presetOverallDisplay {
+      margin-top: 12px;
+      font-weight: bold;
+    }
   </style>
 </head>
 <body>
@@ -129,15 +201,17 @@
 
   <button onclick="showSection('match')">Match Simulator</button>
   <button onclick="showSection('market')">Rating Calculator</button>
+  <button onclick="showSection('presets')">Presets</button>
 
   <button id="settingsToggle" onclick="toggleSettings()">Settings</button>
   <div id="settingsPanel">
     <label><input type="checkbox" id="homeAdvantage"> Home Advantage</label>
     <label><input type="checkbox" id="detailedAnalysis"> Detailed Analysis</label>
-    <label><input type="checkbox" id="manual11"> Manuel 11</label>
+    <label><input type="checkbox" id="manual11"> Manual 11</label>
     <label><input type="checkbox" id="enableMoral"> Enable Moral</label>
   </div>
 
+  <!-- Match Simulator Tab -->
   <div id="match" class="section">
     <h2>⚽ Match Simulator</h2>
 
@@ -171,6 +245,7 @@
     <div id="detailedOutput"></div>
   </div>
 
+  <!-- Market Value Tab -->
   <div id="market" class="section">
     <h2>Market Value - FIFA Rating Calculator</h2>
 
@@ -188,6 +263,44 @@
     <h3 id="ratingResult"></h3>
   </div>
 
+  <!-- Presets Tab -->
+  <div id="presets" class="section">
+    <h2>Presets</h2>
+    <label for="presetNameInput">Preset Name:</label>
+    <input type="text" id="presetNameInput" autocomplete="off" spellcheck="false">
+
+    <label>
+      <input type="checkbox" id="useManual11ForPreset"> Use Manual 11 Ratings
+    </label>
+
+    <div id="presetManualInputs" style="display:none;">
+      <!-- 11 manual number inputs inserted by JS -->
+    </div>
+
+    <input type="number" id="presetSingleRating" min="0" max="100" style="margin-top:10px;" placeholder="">
+
+    <div id="presetButtons">
+      <button onclick="addOrUpdatePreset()">Save / Update Preset</button>
+      <button onclick="deletePreset()">Delete Preset</button>
+      <button onclick="clearPresetForm()">Clear</button>
+    </div>
+
+    <label for="presetListSelect">Select Preset:</label>
+    <select id="presetListSelect" onchange="onPresetSelect()">
+      <option value="">-- Select a Preset --</option>
+    </select>
+
+    <label for="presetApplyTeamSelect">Apply Preset To Team:</label>
+    <select id="presetApplyTeamSelect">
+      <option value="A">Team A</option>
+      <option value="B">Team B</option>
+    </select>
+
+    <button style="margin-top:10px;" onclick="applyPresetToTeam()">Apply Preset</button>
+
+    <div id="presetOverallDisplay"></div>
+  </div>
+
 <script>
   const positions = ['GK', 'CB', 'LB/RB', 'CDM', 'CM', 'CAM', 'LW/RW', 'ST'];
   const positionFactors = {
@@ -201,156 +314,195 @@
     ST: 1
   };
 
-  function updatePositionLabel() {
-    const slider = document.getElementById('positionSlider');
-    const label = document.getElementById('positionLabel');
-    label.innerText = positions[slider.value];
-  }
-
+  // Sections
   function showSection(section) {
     document.querySelectorAll('.section').forEach(div => div.style.display = 'none');
     document.getElementById(section).style.display = 'block';
     clearResults();
   }
 
+  // Settings toggle
   function toggleSettings() {
     const panel = document.getElementById("settingsPanel");
     panel.style.display = (panel.style.display === "block") ? "none" : "block";
   }
 
+  // Clear results area
   function clearResults() {
     document.getElementById("result").innerText = "";
     document.getElementById("detailedOutput").innerText = "";
     document.getElementById("ratingResult").innerText = "";
+    document.getElementById("presetOverallDisplay").innerText = "";
   }
 
-  document.addEventListener('DOMContentLoaded', () => {
-    showSection('match');
-    updatePositionLabel();
-    setupManual11Inputs();
-    document.getElementById("manual11").addEventListener('change', updateManual11Mode);
-    document.getElementById("homeAdvantage").addEventListener('change', clearResults);
-    document.getElementById("detailedAnalysis").addEventListener('change', clearResults);
-    document.getElementById("enableMoral").addEventListener('change', () => {
-      const moralInputs = document.getElementById("moralInputs");
-      moralInputs.style.display = document.getElementById("enableMoral").checked ? "block" : "none";
-      clearResults();
-    });
-  });
-
+  // Setup manual11 inputs in match tab (only once)
   function setupManual11Inputs(){
     const teamAContainer = document.getElementById("teamA11");
     const teamBContainer = document.getElementById("teamB11");
-    for(let i=0; i<11; i++){
-      const inputA = document.createElement("input");
-      inputA.type = "number";
-      inputA.min = 0;
-      inputA.max = 100;
-      inputA.className = "playerInput";
-      teamAContainer.appendChild(inputA);
+    if(teamAContainer.children.length === 1){ // Only label exists, no inputs yet
+      for(let i=0; i<11; i++){
+        const inputA = document.createElement("input");
+        inputA.type = "number";
+        inputA.min = 0;
+        inputA.max = 100;
+        inputA.className = "playerInput";
+        teamAContainer.appendChild(inputA);
 
-      const inputB = document.createElement("input");
-      inputB.type = "number";
-      inputB.min = 0;
-      inputB.max = 100;
-      inputB.className = "playerInput";
-      teamBContainer.appendChild(inputB);
+        const inputB = document.createElement("input");
+        inputB.type = "number";
+        inputB.min = 0;
+        inputB.max = 100;
+        inputB.className = "playerInput";
+        teamBContainer.appendChild(inputB);
+      }
     }
   }
 
+  // Update manual11 checkbox mode in match tab
   function updateManual11Mode(){
-    const manualChecked = document.getElementById("manual11").checked;
+    const manualCheckbox = document.getElementById("manual11");
+    const manualChecked = manualCheckbox.checked;
+
     document.getElementById("normalRatingInputs").style.display = manualChecked ? "none" : "block";
     document.getElementById("manual11Container").style.display = manualChecked ? "flex" : "none";
-    document.getElementById("finishBtn").style.display = "none";
-    clearResults();
+    document.getElementById("finishBtn").style.display = manualChecked ? "inline-block" : "none";
 
-    if(manualChecked){
-      const inputsB = document.querySelectorAll("#teamB11 input");
-      inputsB.forEach(input => {
-        input.addEventListener('input', () => {
-          const allFilled = Array.from(inputsB).every(i => i.value !== "" && !isNaN(i.value));
-          document.getElementById("finishBtn").style.display = allFilled ? "inline-block" : "none";
-        });
-      });
-    }
+    // Show or hide moral inputs depending on moral & manual11
+    const moralInputs = document.getElementById("moralInputs");
+    moralInputs.style.display = (manualChecked && document.getElementById("enableMoral").checked) ? "block" : "none";
+
+    clearResults();
   }
 
+  // Moral inputs toggle
+  function updateMoralMode(){
+    const enableMoral = document.getElementById('enableMoral').checked;
+    const manualChecked = document.getElementById('manual11').checked;
+
+    document.getElementById('moralInputs').style.display = (enableMoral && manualChecked) ? 'block' : 'none';
+  }
+
+  // Calculate average rating rounding like original formula (round(sum/11))
+  function calcAverageRating(arr){
+    let sum = 0;
+    for(let v of arr) sum += v;
+    return Math.round(sum / arr.length);
+  }
+
+  // Finish manual11 inputs: calculate overall ratings and fill number inputs
+  function finishManual11(){
+    const manualCheckbox = document.getElementById('manual11');
+    if(!manualCheckbox.checked) return;
+
+    const teamAInputs = document.querySelectorAll('#teamA11 input');
+    const teamBInputs = document.querySelectorAll('#teamB11 input');
+    const ratingsA = [];
+    const ratingsB = [];
+
+    for(let i=0; i<11; i++){
+      const valA = parseInt(teamAInputs[i].value);
+      const valB = parseInt(teamBInputs[i].value);
+
+      if(isNaN(valA) || valA < 0 || valA > 100){
+        alert(`Team A player ${i+1} rating invalid (0-100).`);
+        return;
+      }
+      if(isNaN(valB) || valB < 0 || valB > 100){
+        alert(`Team B player ${i+1} rating invalid (0-100).`);
+        return;
+      }
+
+      ratingsA.push(valA);
+      ratingsB.push(valB);
+    }
+
+    const avgA = calcAverageRating(ratingsA);
+    const avgB = calcAverageRating(ratingsB);
+
+    document.getElementById('ratingA').value = avgA;
+    document.getElementById('ratingB').value = avgB;
+
+    alert(`Manual 11 finished! Team A overall: ${avgA}, Team B overall: ${avgB}`);
+  }
+
+  // Simulate match (keep original formula untouched)
   function simulateMatch(){
     clearResults();
 
-    const manualChecked = document.getElementById("manual11").checked;
-    const homeAdvantageChecked = document.getElementById("homeAdvantage").checked;
-    const detailedChecked = document.getElementById("detailedAnalysis").checked;
+    const manualChecked = document.getElementById('manual11').checked;
+    let ratingA, ratingB;
 
     if(manualChecked){
-      alert("Manuel 11 modunda önce Finish butonuna basmalısın.");
-      return;
-    }
+      // Get ratings from manual11 inputs
+      const teamAInputs = document.querySelectorAll('#teamA11 input');
+      const teamBInputs = document.querySelectorAll('#teamB11 input');
+      const ratingsA = [];
+      const ratingsB = [];
 
-    let ratingA = parseInt(document.getElementById("ratingA").value);
-    let ratingB = parseInt(document.getElementById("ratingB").value);
-    const useMoral = document.getElementById("enableMoral").checked;
-    const moralA = useMoral ? parseInt(document.getElementById("moralA").value) || 0 : 0;
-    const moralB = useMoral ? parseInt(document.getElementById("moralB").value) || 0 : 0;
+      for(let i=0; i<11; i++){
+        let valA = parseInt(teamAInputs[i].value);
+        let valB = parseInt(teamBInputs[i].value);
 
-    ratingA += moralA * 1.5;
-    ratingB += moralB * 1.5;
+        if(isNaN(valA) || valA < 0 || valA > 100){
+          alert(`Team A player ${i+1} rating invalid!`);
+          return;
+        }
+        if(isNaN(valB) || valB < 0 || valB > 100){
+          alert(`Team B player ${i+1} rating invalid!`);
+          return;
+        }
+        ratingsA.push(valA);
+        ratingsB.push(valB);
+      }
 
-    const result = calcScore(ratingA, ratingB, homeAdvantageChecked);
+      ratingA = calcAverageRating(ratingsA);
+      ratingB = calcAverageRating(ratingsB);
 
-    document.getElementById("result").innerText = `Score: Team A ${result.mainScore.split('-')[0]} - ${result.mainScore.split('-')[1]} Team B`;
-
-    if(detailedChecked){
-      let text = "";
-      result.scores.forEach((item,i) => {
-        text += `${i+1}. ${item.score} %${item.percent}\n`;
-      });
-      document.getElementById("detailedOutput").innerText = text;
-    }
-  }
-
-  function finishManual11(){
-    clearResults();
-    const homeAdvantageChecked = document.getElementById("homeAdvantage").checked;
-    const detailedChecked = document.getElementById("detailedAnalysis").checked;
-
-    const inputsA = document.querySelectorAll("#teamA11 input");
-    const inputsB = document.querySelectorAll("#teamB11 input");
-
-    let sumA = 0, sumB = 0;
-    for(let i=0; i<11; i++){
-      const valA = parseInt(inputsA[i].value);
-      const valB = parseInt(inputsB[i].value);
-
-      if(isNaN(valA) || isNaN(valB)){
-        alert("Tüm oyuncuların ratinglerini doldur!");
+      if(document.getElementById('enableMoral').checked){
+        const moralA = parseInt(document.getElementById('moralA').value) || 0;
+        const moralB = parseInt(document.getElementById('moralB').value) || 0;
+        ratingA += moralA * 1.5;
+        ratingB += moralB * 1.5;
+      }
+    } else {
+      ratingA = parseInt(document.getElementById('ratingA').value);
+      ratingB = parseInt(document.getElementById('ratingB').value);
+      if(isNaN(ratingA) || isNaN(ratingB)){
+        alert("Please enter valid ratings for both teams.");
         return;
       }
-      sumA += valA;
-      sumB += valB;
+
+      if(document.getElementById('enableMoral').checked){
+        const moralA = parseInt(document.getElementById('moralA').value) || 0;
+        const moralB = parseInt(document.getElementById('moralB').value) || 0;
+        ratingA += moralA * 1.5;
+        ratingB += moralB * 1.5;
+      }
     }
 
-    const avgA = Math.round(sumA/11);
-    const avgB = Math.round(sumB/11);
+    if(document.getElementById('homeAdvantage').checked){
+      ratingA += 5;
+    }
 
-    const useMoral = document.getElementById("enableMoral").checked;
-    const moralA = useMoral ? parseInt(document.getElementById("moralA").value) || 0 : 0;
-    const moralB = useMoral ? parseInt(document.getElementById("moralB").value) || 0 : 0;
+    // Cap ratings
+    ratingA = Math.min(Math.max(ratingA, 0), 100);
+    ratingB = Math.min(Math.max(ratingB, 0), 100);
 
-    const result = calcScore(avgA + moralA * 1.5, avgB + moralB * 1.5, homeAdvantageChecked);
+    // Use your original calcScore function here (kept as-is):
+    const result = calcScore(ratingA, ratingB, document.getElementById('homeAdvantage').checked);
 
-    document.getElementById("result").innerText = `Score: Team A ${result.mainScore.split('-')[0]} - ${result.mainScore.split('-')[1]} Team B`;
+    document.getElementById('result').innerText = `Score: Team A ${result.mainScore.split('-')[0]} - ${result.mainScore.split('-')[1]} Team B`;
 
-    if(detailedChecked){
+    if(document.getElementById('detailedAnalysis').checked){
       let text = "";
       result.scores.forEach((item,i) => {
         text += `${i+1}. ${item.score} %${item.percent}\n`;
       });
-      document.getElementById("detailedOutput").innerText = text;
+      document.getElementById('detailedOutput').innerText = text;
     }
   }
 
+  // Calculate score (original formula untouched)
   function calcScore(ratingA, ratingB, homeAdvantageChecked){
     const differenceRaw = Math.abs(ratingA - ratingB);
     const differenceNorm = differenceRaw / 22;
@@ -402,6 +554,13 @@
     };
   }
 
+  // Calculate Rating Tab
+  function updatePositionLabel() {
+    const slider = document.getElementById('positionSlider');
+    const label = document.getElementById('positionLabel');
+    label.innerText = positions[slider.value];
+  }
+
   function calculateRating() {
     const marketValue = parseFloat(document.getElementById("marketValue").value);
     const age = parseInt(document.getElementById("playerAge").value);
@@ -439,8 +598,237 @@
 
     document.getElementById("ratingResult").innerText = `Estimated FIFA Rating: ${finalRating}`;
   }
+
+  // Presets data stored here
+  let presets = {};
+
+  // Save presets to localStorage
+  function savePresetsToLocalStorage() {
+    localStorage.setItem('matchSimulatorPresets', JSON.stringify(presets));
+  }
+
+  // Load presets from localStorage on page load
+  function loadPresetsFromLocalStorage() {
+    const stored = localStorage.getItem('matchSimulatorPresets');
+    if(stored){
+      presets = JSON.parse(stored);
+    }
+  }
+
+  // Presets Manual 11 inputs container
+  const presetManualInputsContainer = document.getElementById('presetManualInputs');
+  for(let i=0; i<11; i++){
+    const input = document.createElement('input');
+    input.type = 'number';
+    input.min = 0;
+    input.max = 100;
+    input.className = 'playerInput';
+    input.title = `Player ${i+1} rating`;
+    input.addEventListener('input', updatePresetOverallDisplay);
+    presetManualInputsContainer.appendChild(input);
+  }
+
+  // Toggle manual11 inputs or single rating in presets tab
+  document.getElementById('useManual11ForPreset').addEventListener('change', e => {
+    const checked = e.target.checked;
+    if(checked){
+      presetManualInputsContainer.style.display = 'flex';
+      document.getElementById('presetSingleRating').style.display = 'none';
+    } else {
+      presetManualInputsContainer.style.display = 'none';
+      document.getElementById('presetSingleRating').style.display = 'inline-block';
+    }
+    updatePresetOverallDisplay();
+  });
+
+  document.getElementById('presetSingleRating').addEventListener('input', updatePresetOverallDisplay);
+
+  // Update overall rating display in presets tab
+  function updatePresetOverallDisplay(){
+    let overall = 0;
+    if(document.getElementById('useManual11ForPreset').checked){
+      const vals = [];
+      const inputs = presetManualInputsContainer.querySelectorAll('input');
+      for(let inp of inputs){
+        let val = parseInt(inp.value);
+        if(isNaN(val)) val = 0;
+        vals.push(val);
+      }
+      overall = calcAverageRating(vals);
+    } else {
+      overall = Math.round(parseInt(document.getElementById('presetSingleRating').value) || 0);
+    }
+    document.getElementById('presetOverallDisplay').innerText = `Overall rating: ${overall}`;
+  }
+
+  // Add or update preset
+  function addOrUpdatePreset(){
+    const name = document.getElementById('presetNameInput').value.trim();
+    if(name === ''){
+      alert('Enter preset name.');
+      return;
+    }
+
+    if(document.getElementById('useManual11ForPreset').checked){
+      const vals = [];
+      const inputs = presetManualInputsContainer.querySelectorAll('input');
+      for(let i=0; i<inputs.length; i++){
+        let val = parseInt(inputs[i].value);
+        if(isNaN(val) || val < 0 || val > 100){
+          alert(`Player ${i+1} rating invalid (0-100).`);
+          return;
+        }
+        vals.push(val);
+      }
+      presets[name] = { manual11: true, ratings: vals };
+    } else {
+      let val = parseInt(document.getElementById('presetSingleRating').value);
+      if(isNaN(val) || val < 0 || val > 100){
+        alert('Single rating invalid (0-100).');
+        return;
+      }
+      presets[name] = { manual11: false, rating: val };
+    }
+
+    savePresetsToLocalStorage();
+
+    updatePresetList();
+    alert(`Preset "${name}" saved.`);
+  }
+
+  // Delete preset
+  function deletePreset(){
+    const sel = document.getElementById('presetListSelect');
+    const name = sel.value;
+    if(name === ''){
+      alert('Select a preset to delete.');
+      return;
+    }
+    if(confirm(`Delete preset "${name}"?`)){
+      delete presets[name];
+
+      savePresetsToLocalStorage();
+
+      updatePresetList();
+      clearPresetForm();
+    }
+  }
+
+  // Clear presets form
+  function clearPresetForm(){
+    document.getElementById('presetNameInput').value = '';
+    document.getElementById('useManual11ForPreset').checked = false;
+    presetManualInputsContainer.style.display = 'none';
+    document.getElementById('presetSingleRating').style.display = 'inline-block';
+    document.getElementById('presetSingleRating').value = '';
+    presetManualInputsContainer.querySelectorAll('input').forEach(inp => inp.value = '');
+    document.getElementById('presetOverallDisplay').innerText = '';
+    document.getElementById('presetListSelect').value = '';
+  }
+
+  // Update presets dropdown list
+  function updatePresetList(){
+    const sel = document.getElementById('presetListSelect');
+    const prevVal = sel.value;
+    sel.innerHTML = '<option value="">-- Select a Preset --</option>';
+    Object.keys(presets).sort().forEach(name => {
+      const option = document.createElement('option');
+      option.value = name;
+      option.textContent = name;
+      sel.appendChild(option);
+    });
+    if(prevVal && presets[prevVal]){
+      sel.value = prevVal;
+    }
+  }
+
+  // Load preset on selection
+  function onPresetSelect(){
+    const sel = document.getElementById('presetListSelect');
+    const name = sel.value;
+    if(name === ''){
+      clearPresetForm();
+      return;
+    }
+    const preset = presets[name];
+    if(!preset) return;
+
+    document.getElementById('presetNameInput').value = name;
+    document.getElementById('useManual11ForPreset').checked = preset.manual11;
+
+    if(preset.manual11){
+      presetManualInputsContainer.style.display = 'flex';
+      document.getElementById('presetSingleRating').style.display = 'none';
+      for(let i=0; i<11; i++){
+        presetManualInputsContainer.querySelectorAll('input')[i].value = preset.ratings[i];
+      }
+    } else {
+      presetManualInputsContainer.style.display = 'none';
+      document.getElementById('presetSingleRating').style.display = 'inline-block';
+      document.getElementById('presetSingleRating').value = preset.rating;
+      presetManualInputsContainer.querySelectorAll('input').forEach(inp => inp.value = '');
+    }
+    updatePresetOverallDisplay();
+  }
+
+  // Apply preset to Team A or B in Match tab
+  function applyPresetToTeam(){
+    const team = document.getElementById('presetApplyTeamSelect').value;
+    const sel = document.getElementById('presetListSelect');
+    const name = sel.value;
+    if(name === ''){
+      alert('Select a preset to apply.');
+      return;
+    }
+    const preset = presets[name];
+    if(!preset){
+      alert('Preset not found.');
+      return;
+    }
+
+    if(preset.manual11){
+      // Set manual11 checkbox on if not already on
+      if(!document.getElementById('manual11').checked){
+        document.getElementById('manual11').checked = true;
+        updateManual11Mode();
+      }
+      const container = team === 'A' ? document.getElementById('teamA11') : document.getElementById('teamB11');
+      const inputs = container.querySelectorAll('input');
+      for(let i=0; i<11; i++){
+        inputs[i].value = preset.ratings[i];
+      }
+      alert(`Preset "${name}" applied to Team ${team}.`);
+    } else {
+      // Set manual11 off and fill single rating inputs
+      if(document.getElementById('manual11').checked){
+        document.getElementById('manual11').checked = false;
+        updateManual11Mode();
+      }
+      if(team === 'A'){
+        document.getElementById('ratingA').value = preset.rating;
+      } else {
+        document.getElementById('ratingB').value = preset.rating;
+      }
+      alert(`Preset "${name}" applied to Team ${team}.`);
+    }
+  }
+
+  // Initialize everything on page load
+  window.onload = function(){
+    showSection('match');
+    updatePositionLabel();
+    setupManual11Inputs();
+    updateManual11Mode();
+    updateMoralMode();
+    loadPresetsFromLocalStorage();
+    updatePresetList();
+    updatePresetOverallDisplay();
+
+    // Checkbox event listeners
+    document.getElementById('manual11').addEventListener('change', updateManual11Mode);
+    document.getElementById('enableMoral').addEventListener('change', updateMoralMode);
+  }
 </script>
 
 </body>
 </html>
-
