@@ -38,7 +38,6 @@
       display: block;
       margin-top: 15px;
       font-weight: bold;
-      text-align: left;
     }
     input[type=number], input[type=range], select {
       padding: 6px;
@@ -83,7 +82,6 @@
       font-family: monospace;
       white-space: pre-line;
       min-height: 60px;
-      text-align: left;
     }
     #manual11Container {
       display: flex;
@@ -101,7 +99,6 @@
       font-weight: normal;
       font-size: 14px;
       margin-bottom: 6px;
-      text-align: center;
     }
     .playerInput {
       width: 36px;
@@ -157,13 +154,14 @@
       max-width: 380px;
     }
     #presetManualInputs input {
-      width: 50px;
-      height: 40px;
-      font-size: 18px;
-      text-align: center;
-      border-radius: 4px;
-      border: 1px solid #ccc;
-    }
+  width: 50px;
+  height: 40px;
+  font-size: 18px;
+  text-align: center;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+}
+
     #presetSingleRating {
       margin-top: 10px;
       font-size: 16px;
@@ -207,7 +205,7 @@
   <div id="settingsPanel">
     <label><input type="checkbox" id="homeAdvantage"> Home Advantage</label>
     <label><input type="checkbox" id="detailedAnalysis"> Detailed Analysis</label>
-    <label><input type="checkbox" id="manual11"> Manual 11</label>
+    <label><input type="checkbox" id="manual11"> Manuel 11</label>
     <label><input type="checkbox" id="enableMoral"> Enable Moral</label>
   </div>
 
@@ -247,7 +245,7 @@
 
   <!-- Market Value Tab -->
   <div id="market" class="section">
-    <h2>Market Value - Rating Calculator</h2>
+    <h2>Market Value - FIFA Rating Calculator</h2>
 
     <label>Player Market Value (€ Million):</label>
     <input id="marketValue" type="number" value="0" min="0" step="0.01"><br>
@@ -277,7 +275,7 @@
       <!-- 11 manual number inputs inserted by JS -->
     </div>
 
-    <input type="number" id="presetSingleRating" min="0" max="100" style="margin-top:10px;" placeholder="">
+    <input type="number" id="presetSingleRating" min="0" max="100" style="margin-top:10px;">
 
     <div id="presetButtons">
       <button onclick="addOrUpdatePreset()">Save / Update Preset</button>
@@ -379,7 +377,7 @@
     const enableMoral = document.getElementById('enableMoral').checked;
     const manualChecked = document.getElementById('manual11').checked;
 
-    document.getElementById('moralInputs').style.display = (enableMoral && manualChecked) ? 'block' : 'none';
+    document.getElementById('moralInputs').style.display = document.getElementById("enableMoral").checked ? "block" : "none";
   }
 
   // Calculate average rating rounding like original formula (round(sum/11))
@@ -602,19 +600,6 @@
   // Presets data stored here
   let presets = {};
 
-  // Save presets to localStorage
-  function savePresetsToLocalStorage() {
-    localStorage.setItem('matchSimulatorPresets', JSON.stringify(presets));
-  }
-
-  // Load presets from localStorage on page load
-  function loadPresetsFromLocalStorage() {
-    const stored = localStorage.getItem('matchSimulatorPresets');
-    if(stored){
-      presets = JSON.parse(stored);
-    }
-  }
-
   // Presets Manual 11 inputs container
   const presetManualInputsContainer = document.getElementById('presetManualInputs');
   for(let i=0; i<11; i++){
@@ -624,7 +609,6 @@
     input.max = 100;
     input.className = 'playerInput';
     input.title = `Player ${i+1} rating`;
-    input.addEventListener('input', updatePresetOverallDisplay);
     presetManualInputsContainer.appendChild(input);
   }
 
@@ -639,6 +623,11 @@
       document.getElementById('presetSingleRating').style.display = 'inline-block';
     }
     updatePresetOverallDisplay();
+  });
+
+  // Update overall rating display when inputs change
+  presetManualInputsContainer.querySelectorAll('input').forEach(input => {
+    input.addEventListener('input', updatePresetOverallDisplay);
   });
 
   document.getElementById('presetSingleRating').addEventListener('input', updatePresetOverallDisplay);
@@ -690,8 +679,6 @@
       presets[name] = { manual11: false, rating: val };
     }
 
-    savePresetsToLocalStorage();
-
     updatePresetList();
     alert(`Preset "${name}" saved.`);
   }
@@ -706,9 +693,6 @@
     }
     if(confirm(`Delete preset "${name}"?`)){
       delete presets[name];
-
-      savePresetsToLocalStorage();
-
       updatePresetList();
       clearPresetForm();
     }
@@ -731,18 +715,26 @@
     const sel = document.getElementById('presetListSelect');
     const prevVal = sel.value;
     sel.innerHTML = '<option value="">-- Select a Preset --</option>';
+
     Object.keys(presets).sort().forEach(name => {
       const option = document.createElement('option');
       option.value = name;
-      option.textContent = name;
+
+      // Show overall rating for preset (calculate average if manual11)
+      let overall = 0;
+      if(presets[name].manual11){
+        overall = calcAverageRating(presets[name].ratings);
+      } else {
+        overall = presets[name].rating;
+      }
+      option.textContent = `${name} (Overall: ${overall})`;
       sel.appendChild(option);
     });
-    if(prevVal && presets[prevVal]){
-      sel.value = prevVal;
-    }
+
+    sel.value = prevVal;
   }
 
-  // Load preset on selection
+  // When selecting a preset from dropdown, fill form inputs accordingly
   function onPresetSelect(){
     const sel = document.getElementById('presetListSelect');
     const name = sel.value;
@@ -751,16 +743,17 @@
       return;
     }
     const preset = presets[name];
-    if(!preset) return;
-
     document.getElementById('presetNameInput').value = name;
     document.getElementById('useManual11ForPreset').checked = preset.manual11;
 
     if(preset.manual11){
       presetManualInputsContainer.style.display = 'flex';
       document.getElementById('presetSingleRating').style.display = 'none';
+
+      // Fill manual11 inputs
+      const inputs = presetManualInputsContainer.querySelectorAll('input');
       for(let i=0; i<11; i++){
-        presetManualInputsContainer.querySelectorAll('input')[i].value = preset.ratings[i];
+        inputs[i].value = preset.ratings[i];
       }
     } else {
       presetManualInputsContainer.style.display = 'none';
@@ -768,66 +761,73 @@
       document.getElementById('presetSingleRating').value = preset.rating;
       presetManualInputsContainer.querySelectorAll('input').forEach(inp => inp.value = '');
     }
+
     updatePresetOverallDisplay();
   }
 
-  // Apply preset to Team A or B in Match tab
+  // Apply selected preset to Team A or B in manual11 or rating inputs
   function applyPresetToTeam(){
-    const team = document.getElementById('presetApplyTeamSelect').value;
     const sel = document.getElementById('presetListSelect');
     const name = sel.value;
     if(name === ''){
-      alert('Select a preset to apply.');
+      alert('Select a preset first.');
       return;
     }
     const preset = presets[name];
-    if(!preset){
-      alert('Preset not found.');
-      return;
+    const team = document.getElementById('presetApplyTeamSelect').value; // 'A' or 'B'
+
+    if(document.getElementById('manual11').checked){
+      // manual11 mode active - fill manual11 inputs for selected team
+      const containerId = team === 'A' ? 'teamA11' : 'teamB11';
+      const inputs = document.querySelectorAll(`#${containerId} input`);
+      if(preset.manual11){
+        // Fill 11 numbers
+        for(let i=0; i<11; i++){
+          inputs[i].value = preset.ratings[i];
+        }
+      } else {
+        // Fill all 11 inputs with single rating
+        for(let i=0; i<11; i++){
+          inputs[i].value = preset.rating;
+        }
+      }
+
+      // Also update overall rating inputs (hidden in manual mode but needed for simulation)
+      let overall = preset.manual11 ? calcAverageRating(preset.ratings) : preset.rating;
+      document.getElementById('rating' + team).value = overall;
+    } else {
+      // manual11 mode off - fill rating inputs directly
+      let overall = preset.manual11 ? calcAverageRating(preset.ratings) : preset.rating;
+      document.getElementById('rating' + team).value = overall;
     }
 
-    if(preset.manual11){
-      // Set manual11 checkbox on if not already on
-      if(!document.getElementById('manual11').checked){
-        document.getElementById('manual11').checked = true;
-        updateManual11Mode();
-      }
-      const container = team === 'A' ? document.getElementById('teamA11') : document.getElementById('teamB11');
-      const inputs = container.querySelectorAll('input');
-      for(let i=0; i<11; i++){
-        inputs[i].value = preset.ratings[i];
-      }
-      alert(`Preset "${name}" applied to Team ${team}.`);
-    } else {
-      // Set manual11 off and fill single rating inputs
-      if(document.getElementById('manual11').checked){
-        document.getElementById('manual11').checked = false;
-        updateManual11Mode();
-      }
-      if(team === 'A'){
-        document.getElementById('ratingA').value = preset.rating;
-      } else {
-        document.getElementById('ratingB').value = preset.rating;
-      }
-      alert(`Preset "${name}" applied to Team ${team}.`);
-    }
+    alert(`Preset "${name}" applied to Team ${team}.`);
   }
 
-  // Initialize everything on page load
-  window.onload = function(){
+  // Init on load
+  window.onload = function() {
     showSection('match');
     updatePositionLabel();
     setupManual11Inputs();
+
+    // Settings checkbox listeners
+    document.getElementById('manual11').addEventListener('change', () => {
+      updateManual11Mode();
+      clearResults();
+    });
+
+    document.getElementById('enableMoral').addEventListener('change', () => {
+      updateMoralMode();
+      clearResults();
+    });
+
+    document.getElementById('homeAdvantage').addEventListener('change', clearResults);
+    document.getElementById('detailedAnalysis').addEventListener('change', clearResults);
+
     updateManual11Mode();
     updateMoralMode();
-    loadPresetsFromLocalStorage();
     updatePresetList();
-    updatePresetOverallDisplay();
-
-    // Checkbox event listeners
-    document.getElementById('manual11').addEventListener('change', updateManual11Mode);
-    document.getElementById('enableMoral').addEventListener('change', updateMoralMode);
-  }
+  };
 </script>
 
 </body>
