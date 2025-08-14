@@ -588,7 +588,7 @@
     else ageFactor = 0.24;
 
     const baseFactor = 0.00000711;
-    const rawRating = (1 / 0.175) * Math.log(marketValue / (baseFactor * ageFactor));
+    const rawRating = (1 / 0.171) * Math.log(marketValue / (baseFactor * ageFactor));
 
     const positionFactor = positionFactors[position] || 1;
 
@@ -832,4 +832,5 @@
 
 </body>
 </html>
+
 
