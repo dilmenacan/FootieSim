@@ -579,16 +579,16 @@
     else if (age <= 23) ageFactor = 1.55;
     else if (age <= 26) ageFactor = 1.2;
     else if (age <= 29) ageFactor = 0.9;
-    else if (age <= 32) ageFactor = 0.6;
-    else if (age <= 35) ageFactor = 0.54;
-    else if (age <= 37) ageFactor = 0.43;
-    else if (age <= 41) ageFactor = 0.35;
-    else if (age <= 43) ageFactor = 0.30;
-    else if (age <= 46) ageFactor = 0.27;
+    else if (age <= 32) ageFactor = 0.65;
+    else if (age <= 35) ageFactor = 0.59;
+    else if (age <= 37) ageFactor = 0.49;
+    else if (age <= 41) ageFactor = 0.4;
+    else if (age <= 43) ageFactor = 0.35;
+    else if (age <= 46) ageFactor = 0.30;
     else ageFactor = 0.24;
 
     const baseFactor = 0.00000711;
-    const rawRating = (1 / 0.1885) * Math.log(marketValue / (baseFactor * ageFactor));
+    const rawRating = (1 / 0.175) * Math.log(marketValue / (baseFactor * ageFactor));
 
     const positionFactor = positionFactors[position] || 1;
 
@@ -832,3 +832,4 @@
 
 </body>
 </html>
+
