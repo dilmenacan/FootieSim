@@ -3,26 +3,6 @@
 <head>
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4572152295069706"
      crossorigin="anonymous"></script>
-  <script>
-window.addEventListener("load", function() {
-  if(!localStorage.getItem("cookieConsent")) {
-    let consentBanner = document.createElement("div");
-    consentBanner.innerHTML = `
-      <div id="consentBanner" style="
-        position: fixed; bottom: 0; left: 0; right: 0;
-        background: #222; color: #fff; padding: 15px; text-align: center; z-index: 9999;">
-        This site uses cookies to show ads. 
-        <button id="acceptCookies" style="margin-left:10px; padding:5px 10px;">Accept</button>
-      </div>`;
-    document.body.appendChild(consentBanner);
-
-    document.getElementById("acceptCookies").onclick = function() {
-      localStorage.setItem("cookieConsent", "true");
-      document.getElementById("consentBanner").style.display = "none";
-    };
-  }
-});
-</script>
 
   <title>Match Simulator and Rating Calculator</title>
   <style>
@@ -867,6 +847,7 @@ window.addEventListener("load", function() {
 
 </body>
 </html>
+
 
 
 
