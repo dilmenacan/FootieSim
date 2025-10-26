@@ -317,14 +317,14 @@
 <script>
   const positions = ['GK', 'CB', 'LB/RB', 'CDM', 'CM', 'CAM', 'LW/RW', 'ST'];
   const positionFactors = {
-    GK: 1.05,
-    CB: 1.025,
-    'LB/RB': 1.02,
-    CDM: 1.01,
-    CM: 1.02,
-    CAM: 1,
-    'LW/RW': 1,
-    ST: 1
+    GK: 0.96,
+    CB: 0.955,
+    'LB/RB': 0.955,
+    CDM: 0.95,
+    CM: 0.945,
+    CAM: 0.94,
+    'LW/RW': 0.94,
+    ST: 0.94
   };
 
   // Sections
@@ -589,18 +589,18 @@
     }
 
     let ageFactor;
-    if (age <= 18) ageFactor = 2.0;
-    else if (age <= 20) ageFactor = 1.8;
-    else if (age <= 23) ageFactor = 1.55;
-    else if (age <= 26) ageFactor = 1.2;
-    else if (age <= 29) ageFactor = 0.9;
-    else if (age <= 32) ageFactor = 0.65;
-    else if (age <= 35) ageFactor = 0.59;
-    else if (age <= 37) ageFactor = 0.49;
-    else if (age <= 41) ageFactor = 0.4;
-    else if (age <= 43) ageFactor = 0.35;
-    else if (age <= 46) ageFactor = 0.30;
-    else ageFactor = 0.24;
+    if (age <= 18) ageFactor = 2.3;
+    else if (age <= 20) ageFactor = 2.1;
+    else if (age <= 23) ageFactor = 1.85;
+    else if (age <= 26) ageFactor = 1.5;
+    else if (age <= 29) ageFactor = 1.2;
+    else if (age <= 32) ageFactor = 0.95;
+    else if (age <= 35) ageFactor = 0.85;
+    else if (age <= 37) ageFactor = 0.79;
+    else if (age <= 41) ageFactor = 0.7;
+    else if (age <= 43) ageFactor = 0.65;
+    else if (age <= 46) ageFactor = 0.6;
+    else ageFactor = 1;
 
     const baseFactor = 0.00000711;
     const rawRating = (1 / 0.171) * Math.log(marketValue / (baseFactor * ageFactor));
@@ -847,6 +847,7 @@
 
 </body>
 </html>
+
 
 
 
