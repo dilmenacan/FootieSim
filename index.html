@@ -260,7 +260,7 @@
 
   <!-- Market Value Tab -->
   <div id="market" class="section">
-    <h2>Market Value - FIFA Rating Calculator</h2>
+    <h2>Market Value - Rating Calculator</h2>
 
     <label>Player Market Value (€ Million):</label>
     <input id="marketValue" type="number" value="0" min="0" step="0.01"><br>
@@ -272,7 +272,7 @@
     <input id="positionSlider" type="range" min="0" max="7" value="0" step="1" oninput="updatePositionLabel()">
     <div id="positionLabel">GK</div>
 
-    <button onclick="calculateRating()">Calculate FIFA Rating</button>
+    <button onclick="calculateRating()">Calculate Rating</button>
     <h3 id="ratingResult"></h3>
   </div>
 
@@ -609,7 +609,7 @@
 
     const finalRating = Math.round(rawRating * positionFactor);
 
-    document.getElementById("ratingResult").innerText = `Estimated FIFA Rating: ${finalRating}`;
+    document.getElementById("ratingResult").innerText = `Estimated Rating: ${finalRating}`;
   }
 
   // Presets data stored here
@@ -847,6 +847,7 @@
 
 </body>
 </html>
+
 
 
 
