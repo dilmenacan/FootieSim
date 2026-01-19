@@ -439,84 +439,9 @@
   }
 
   // Simulate match (keep original formula untouched)
-  function simulateMatch(){
-    clearResults();
 
-    const manualChecked = document.getElementById('manual11').checked;
-    let ratingA, ratingB;
 
-    if(manualChecked){
-      // Get ratings from manual11 inputs
-      const teamAInputs = document.querySelectorAll('#teamA11 input');
-      const teamBInputs = document.querySelectorAll('#teamB11 input');
-      const ratingsA = [];
-      const ratingsB = [];
-
-      for(let i=0; i<11; i++){
-        let valA = parseInt(teamAInputs[i].value);
-        let valB = parseInt(teamBInputs[i].value);
-
-        if(isNaN(valA) || valA < 0 || valA > 100){
-          alert(`Team A player ${i+1} rating invalid!`);
-          return;
-        }
-        if(isNaN(valB) || valB < 0 || valB > 100){
-          alert(`Team B player ${i+1} rating invalid!`);
-          return;
-        }
-        ratingsA.push(valA);
-        ratingsB.push(valB);
-      }
-
-      ratingA = calcAverageRating(ratingsA);
-      ratingB = calcAverageRating(ratingsB);
-
-      if(document.getElementById('enableMoral').checked){
-        const moralA = parseInt(document.getElementById('moralA').value) || 0;
-        const moralB = parseInt(document.getElementById('moralB').value) || 0;
-        ratingA += moralA * 1.5;
-        ratingB += moralB * 1.5;
-      }
-    } else {
-      ratingA = parseInt(document.getElementById('ratingA').value);
-      ratingB = parseInt(document.getElementById('ratingB').value);
-      if(isNaN(ratingA) || isNaN(ratingB)){
-        alert("Please enter valid ratings for both teams.");
-        return;
-      }
-
-      if(document.getElementById('enableMoral').checked){
-        const moralA = parseInt(document.getElementById('moralA').value) || 0;
-        const moralB = parseInt(document.getElementById('moralB').value) || 0;
-        ratingA += moralA * 1.5;
-        ratingB += moralB * 1.5;
-      }
-    }
-
-    if(document.getElementById('homeAdvantage').checked){
-      ratingA += 5;
-    }
-
-    // Cap ratings
-    ratingA = Math.min(Math.max(ratingA, 0), 100);
-    ratingB = Math.min(Math.max(ratingB, 0), 100);
-
-    // Use your original calcScore function here (kept as-is):
-    const result = calcScore(ratingA, ratingB, document.getElementById('homeAdvantage').checked);
-
-    document.getElementById('result').innerText = `Score: Team A ${result.mainScore.split('-')[0]} - ${result.mainScore.split('-')[1]} Team B`;
-
-    if(document.getElementById('detailedAnalysis').checked){
-      let text = "";
-      result.scores.forEach((item,i) => {
-        text += `${i+1}. ${item.score} %${item.percent}\n`;
-      });
-      document.getElementById('detailedOutput').innerText = text;
-    }
-  }
-
-  // Calculate score (original formula untouched)
-  function calcScore(ratingA, ratingB, homeAdvantageChecked){
+function calcScore(ratingA, ratingB, homeAdvantageChecked){
     const differenceRaw = Math.abs(ratingA - ratingB);
     const differenceNorm = differenceRaw / 22;
     const totalGoals = 1 + (differenceNorm * 2) * 5;
@@ -525,47 +450,76 @@
     let teamAStrength = ratingA / (ratingA + ratingB);
     let teamBStrength = ratingB / (ratingA + ratingB);
 
-    if (homeAdvantageChecked) {
-      teamAStrength += 0.05;
+    if(homeAdvantageChecked){
+        teamAStrength += 0.05;
     }
 
     const totalStrength = teamAStrength + teamBStrength;
     teamAStrength /= totalStrength;
     teamBStrength /= totalStrength;
 
-    let goalsA = totalGoals * teamAStrength;
-    let goalsB = totalGoals * teamBStrength;
+    // xG hesaplama
+    let xGA = totalGoals * teamAStrength;
+    let xGB = totalGoals * teamBStrength;
 
     const weaker = ratingA < ratingB ? 'A' : 'B';
-    if (weaker === 'A') goalsA *= goalDifferenceFactor;
-    else goalsB *= goalDifferenceFactor;
+    if(weaker === 'A') xGA *= goalDifferenceFactor;
+    else xGB *= goalDifferenceFactor;
 
-    const baseA = Math.round(goalsA);
-    const baseB = Math.round(goalsB);
+    // Minimum xG
+    const minXG = differenceRaw >= 8 ? 0.35 : 0.6;
+    xGA = Math.max(xGA, minXG);
+    xGB = Math.max(xGB, minXG);
 
-    let scores = [];
+// ⚖️ BAZEN KARŞILIKLI GOL (random yok)
+if (xGA >= 0.85 && xGA < 1.05) xGA = 1;
+if (xGB >= 0.85 && xGB < 1.05) xGB = 1;
 
-    if (differenceRaw === 0) {
-      scores = [
-        { score: `1-1`, percent: 40 + Math.floor(Math.random() * 10) },
-        { score: `0-0`, percent: 30 + Math.floor(Math.random() * 10) },
-        { score: `2-2`, percent: 20 + Math.floor(Math.random() * 10) }
-      ];
-    } else {
-      scores = [
-        { score: `${baseA}-${baseB}`, percent: 50 + Math.floor(Math.random() * 15) },
-        { score: `${baseA}-${baseB + 1}`, percent: 20 + Math.floor(Math.random() * 10) },
-        { score: `${baseA + 1}-${baseB}`, percent: 15 + Math.floor(Math.random() * 10) }
-      ];
-    }
 
-    scores.sort((a,b) => b.percent - a.percent);
+    // NET GOL
+    const goalsA = Math.floor(xGA + 0.3);
+    const goalsB = Math.floor(xGB + 0.1);
+
+
+    // Shots random
+    const shotsA = goalsA * (2 + Math.floor(Math.random() * 3));
+    const shotsB = goalsB * (2 + Math.floor(Math.random() * 3));
+
+    // 🔹 Possession hesaplama (burada, fonksiyon içinde)
+    const X = ratingA / 2;
+    const Y = ratingB / 2;
+    const Z = X + Y;
+    const A = 100 - Z;
+    const possA = X + (A * (ratingA / (ratingA + ratingB)));
+    const possB = Y + (A * (ratingB / (ratingA + ratingB)));
 
     return {
-      mainScore: scores[0].score,
-      scores
+        mainScore: `${goalsA}-${goalsB}`,
+        xG: {A: xGA.toFixed(2), B: xGB.toFixed(2)},
+        shots: {A: shotsA, B: shotsB},
+        possession: {A: possA.toFixed(1), B: possB.toFixed(1)}
     };
-  }
+}
+
+function simulateMatch(){
+    const ratingA = parseInt(document.getElementById("ratingA").value);
+    const ratingB = parseInt(document.getElementById("ratingB").value);
+    if(isNaN(ratingA) || isNaN(ratingB)){
+        alert("Please enter valid ratings for both teams.");
+        return;
+    }
+    const home = document.getElementById("homeAdvantage")?.checked || false;
+    const result = calcScore(ratingA, ratingB, home);
+
+    document.getElementById("result").innerText = 
+        `Score: Team A ${result.mainScore.split('-')[0]} - ${result.mainScore.split('-')[1]} Team B`;
+
+    document.getElementById("detailedOutput").innerText = 
+        `xG: ${result.xG.A} - ${result.xG.B}\nShots: ${result.shots.A} - ${result.shots.B}\nPossession: ${result.possession.A}% - ${result.possession.B}%`;
+}
+
+
+
 
   // Calculate Rating Tab
   function updatePositionLabel() {
@@ -847,6 +801,19 @@
 
 </body>
 </html>
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
