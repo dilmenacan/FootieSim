@@ -482,8 +482,30 @@ if (xGB >= 0.85 && xGB < 1.05) xGB = 1;
 
 
     // Shots random
-    const shotsA = goalsA * (2 + Math.floor(Math.random() * 3));
-    const shotsB = goalsB * (2 + Math.floor(Math.random() * 3));
+    const goalDiff = Math.abs(goalsA - goalsB);
+
+// kazanan / kaybeden belirle
+const winnerGoals = Math.max(goalsA, goalsB);
+const loserGoals  = Math.min(goalsA, goalsB);
+
+// kazananın şutları (aynı mantık, random burada OK)
+let shotsWinner = winnerGoals * (5 + Math.floor(Math.random() * 5));
+
+// kaybedenin şutları:
+// skor farkına göre bölme (senin dediğin mantık)
+let shotsLoser;
+if (loserGoals === 0 && goalDiff > 0) {
+  shotsLoser = Math.max(
+    1,
+    Math.round(shotsWinner / goalDiff)
+  );
+} else {
+  shotsLoser = loserGoals * (5 + Math.floor(Math.random() * 5));
+}
+
+// A / B’ye geri dağıt
+const shotsA = goalsA >= goalsB ? shotsWinner : shotsLoser;
+const shotsB = goalsB >  goalsA ? shotsWinner : shotsLoser;
 
     // 🔹 Possession hesaplama (burada, fonksiyon içinde)
     const X = ratingA / 2;
@@ -801,20 +823,6 @@ function simulateMatch(){
 
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
